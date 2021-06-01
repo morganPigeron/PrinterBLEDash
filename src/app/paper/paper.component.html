@@ -1,5 +1,27 @@
-<p>paper works!</p>
-<button (click)="findPrinter()">find printer</button>
-<button (click)="getPrinterInfo()">getPrinterInfo</button>
-<button (click)="sendToPrinter()">sendToPrinter</button>
-<input type="text" class="form-control" #myInput (keyup)="updateBuffer(myInput.value)" />
+<div>Connected ? {{isPrinterConnected}}</div>
+
+<mat-slide-toggle [disabled]="isConnectDisabled" [checked]="isConnectChecked" (change)="isConnectChecked = !isConnectChecked; mainCheck();" >Connect to Printer</mat-slide-toggle>
+
+
+<div *ngIf="isPrinterConnected; else noPrinterBlock">
+
+    <div *ngIf="isBusy; else isNotBusy">
+        <mat-progress-spinner [value]="progressPrint" ></mat-progress-spinner>
+    </div>
+
+    <ng-template #isNotBusy>
+        <div>
+            <input type="text" [ngModel]="buffer" (ngModelChange)="buffer = $event"/>
+        </div>
+        <div>
+            <button [disabled]="isBusy" (click)="sendToPrinter()">sendToPrinter</button> 
+        </div>
+    </ng-template>
+
+    {{totalPrint}}
+
+</div>
+<ng-template #noPrinterBlock>
+
+</ng-template>
+ 

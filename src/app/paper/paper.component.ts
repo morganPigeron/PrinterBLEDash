@@ -1,40 +1,48 @@
-import { Component, OnInit } from '@angular/core';
-import { BlePrinterService } from '../ble-printer.service';
-import { FormControl } from '@angular/forms';
+import { Component, Input } from '@angular/core';
+import { of } from 'rxjs';
+import { debounceTime, delay } from 'rxjs/internal/operators';
+import { BlePrinterService } from '../services/printer/ble-printer.service';
+
 
 @Component({
   selector: 'app-paper',
   templateUrl: './paper.component.html',
   styleUrls: ['./paper.component.scss']
 })
-export class PaperComponent implements OnInit {
+export class PaperComponent {
   
-  private buffer: string = "";
-  current = 'Start';
-  textControl = new FormControl();
-  constructor(private printer: BlePrinterService) { }
+  public isPrinterConnected = false;
+  public isBusy = false;
+  public totalPrint = 0;
+  public progressPrint = 0;
 
-  ngOnInit(): void {
+  public isConnectChecked = false;
+  public isConnectDisabled = false;
+  
 
+  public buffer: string = "";
+
+  constructor(private printer: BlePrinterService) {
+    this.printer.isConnected.subscribe(state => this.isPrinterConnected = state);
+    this.printer.disconnectInfo.subscribe(time => {
+      this.isConnectChecked = false; 
+      console.info(`disconnected at : ${new Date(time)}`);
+    });
+    this.printer.isPrinting.subscribe(state => this.isBusy = state);
+    this.printer.isLoading.subscribe(state => this.isConnectDisabled = state);
+    this.printer.progressPrinting.subscribe(progress => this.progressPrint = progress);
   }
 
-  public findPrinter() {
-    this.printer.initBle();
-  }
-
-  public getPrinterInfo() {
-    this.printer.getDevice()?.then(console.info);
+  public mainCheck() {
+    this.isConnectChecked ? this.printer.connect() : this.printer.disconnect();
   }
 
   public sendToPrinter() {
-    let enc = new TextEncoder(); // always utf-8
-    console.info(`byteLength = ${enc.encode(this.buffer).byteLength}`);
-    this.printer.writeToPrinter(enc.encode(this.buffer));
+    if(this.buffer.length === 0) return;
+    this.printer.writeToPrinter(this.buffer);
+    this.totalPrint = this.printer.getNumberOfPrint();
   }
 
-  public updateBuffer(text: string) {
-    console.info(`buffer = ${text} len = ${text.length}`);
-    this.buffer = text;
-  }
+  public debugBuffer() { console.info(`buffer = ${this.buffer} len = ${this.buffer.length}`) }
 
 }
